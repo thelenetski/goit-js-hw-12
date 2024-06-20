@@ -1,6 +1,8 @@
 import SimpleLightbox from 'simplelightbox';
 import 'simplelightbox/dist/simple-lightbox.min.css';
 
+let galleryBoxes = 'firstload';
+
 export async function renderGallery(data) {
   const renderBox = document.querySelector('.gallery');
 
@@ -31,11 +33,10 @@ export async function renderGallery(data) {
   });
   renderBox.insertAdjacentHTML('beforeend', galleryBox);
 
-  let galleryBoxes = new SimpleLightbox('.gallery a', {
+  if (galleryBoxes !== 'firstload') galleryBoxes.destroy();
+  galleryBoxes = new SimpleLightbox('.gallery a', {
     captionDelay: 250,
   });
-
-  galleryBoxes.refresh();
 }
 
 export function clearRender() {

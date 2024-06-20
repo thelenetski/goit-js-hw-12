@@ -1,5 +1,5 @@
 import * as search from './js/pixabay-api';
-import { clearRender } from './js/render-functions';
+import { renderGallery, clearRender } from './js/render-functions';
 import iziToast from 'izitoast';
 import 'izitoast/dist/css/iziToast.min.css';
 
@@ -9,7 +9,8 @@ const morePostsBtn = document.querySelector('.btn');
 let userSearch;
 let page = 1;
 let limit = 15;
-let size = 0;
+let size = {};
+let totalPages;
 
 form.addEventListener('submit', event => {
   event.preventDefault();
@@ -26,14 +27,22 @@ form.addEventListener('submit', event => {
   morePostsBtn.classList.add('hide');
   clearRender();
   page = 1;
-  search.getData(userSearchRequest.trim(), loader, page, morePostsBtn, limit);
+  search
+    .getData(userSearchRequest.trim(), page, limit)
+    .then(posts => {
+      checkAndRender(posts);
+    })
+    .catch(error => {
+      iziToast.error({
+        title: 'Error',
+        message: error,
+      });
+    });
   event.target.elements.search.value = '';
   userSearch = userSearchRequest.trim();
 });
 
 morePostsBtn.addEventListener('click', () => {
-  const totalPages = Math.ceil(100 / limit);
-
   if (page > totalPages) {
     morePostsBtn.classList.add('hide');
     return iziToast.error({
@@ -49,6 +58,39 @@ morePostsBtn.addEventListener('click', () => {
     morePostsBtn.classList.add('hide');
     let galleryItemSize = document.querySelectorAll('.gallery-item');
     size = galleryItemSize[0].getBoundingClientRect();
-    search.getData(userSearch, loader, page, morePostsBtn, size, limit);
+    search
+      .getData(userSearch, page, limit)
+      .then(posts => {
+        checkAndRender(posts);
+      })
+      .catch(error => {
+        iziToast.error({
+          title: 'Error',
+          message: error,
+        });
+      });
   }
 });
+
+function checkAndRender(posts) {
+  if (posts.hits.length === 0 || posts.hits === 'undefined') {
+    loader.classList.add('hide');
+    return iziToast.error({
+      title: 'Error',
+      message:
+        'Sorry, there are no images matching your search query. Please try again!',
+    });
+  }
+
+  renderGallery(posts).then(() => {
+    if (size.height) {
+      window.scrollBy({
+        top: size.height * 3, // зробив спеціально на 3 рядка
+        behavior: 'smooth',
+      });
+    }
+    totalPages = Math.ceil(posts.totalHits / limit);
+  });
+  loader.classList.add('hide');
+  morePostsBtn.classList.remove('hide');
+}
